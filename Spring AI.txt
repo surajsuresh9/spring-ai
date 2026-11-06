@@ -1,0 +1,67 @@
+Spring AI
+----------
+
+What is Spring AI?
+- framework for integrating AI into Spring applications
+- Simplifies adding gen AI using Spring's modular, POJO based design
+- Connects enterprose data and APIs with AI models seamlessly
+
+Core Features
+-------------
+- Multi-Provider Support:
+	- Integrates with OpenAI, Anthropic, AWS, Google, Hugging Face for chat, embeddings, text-to-image, audio and moderation
+
+- MCP support:
+	- Allows building MCP clients and servers easily
+
+- Vector Store Integrations
+	- Supports RAG with Pinecone, Redis, PostGreSQL/ pgVector, MongoDB, etc
+
+- Advanced Patterns
+	- Chat memory, tool/ function calling,a nd Advisors API for resuable AI logic
+
+- Observability & Guardrails
+	- Monitors AI operations and evaluates outputs to ensure reliability
+	
+Spring Ecosystem Integrations
+-----------------------------
+- Spirng Boot:
+	- auto-configuration and starters for quick setup with AI models and vector DBs
+
+- Familiar Model:
+	- uses Spring's depenedency injection and abstarction, nehaves liek any Spring Bean
+
+- Modular:
+	- easily swap AI proviers or vector stores without chnaging core logic
+
+Typical Use Cases
+-----------------
+- AI powered customer support
+	- build intelligent assistants with conversation memory and API integration
+
+- Natural language search over documents
+	- Summarize or query proprietary data using RAG and vector stores
+
+- Personalized recommendations
+	- Power intent-based search and recommendations with embeddings
+
+- Data processing
+	- Add AI to pipelines for content moderation, transcription or text generation
+	
+Spring AI architecture	
+===============================	
+ChatClient 
+	- fleunt high-level API
+		prompt()
+		system()
+		call()
+		stream()
+	
+ChatModel	
+	- low-level provider interface
+		call(Prompt) --> ChatResponse
+		
+OpenAIChatModel		
+AnthropicChatModel		
+OllamaChatModel
+===============================	
