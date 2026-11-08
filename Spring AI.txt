@@ -65,3 +65,49 @@ OpenAIChatModel
 AnthropicChatModel		
 OllamaChatModel
 ===============================	
+
+Using Prompt Templates
+---------------------
+Why use prompt templates?
+
+- Simplifies prompt construction
+- Makes prompts reusable and maintainable
+- Keeps logic and text clealy separated
+- Supports paramterized placeholders like {customerName}
+
+Where can prompt templates live?
+---------------------------------
+src/main/resource/promptTemplates/userpromptTemplates.st (st => string template)
+
+How to use in code?
+--------------------
+@Value("classpath:/promptTemplates/userpromptTemplates")
+Resource userpromptTemplate
+
+Use with .user() Prompt builder
+
+chatClient.prompt().user(promptUserSpec -> promptUserSpec.text(userpromptTemplate)
+					.param("customerNmae",customerName)
+					.param("customerMessage",customerMessage)
+					.call().content();
+					
+Prompt Stuffing 
+---------------
+Prompt Stuffing = giving the LLM an open book before answering a question
+
+- You include contextual data or reference text along with the user's question
+- The LLM uses this context to answer the question accurately - even if it was not pre-trained on teh topic
+- This technique is also know as in-context learning or retrieval-augmented propmting (when donr programmatically) 
+- e.g: internal company policy lookup 
+
+Prompt (Stuffed):
+	"According to teh company's HR policy, employees are eligible for 18 days of paid leave annually, Unused leave can 
+	be carried over to the next year"
+
+Question:
+	How amy paid leaves do employees get each year
+
+LLM Answer
+	Employees are eligible for 18 days of paid leave anually
+
+	
