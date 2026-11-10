@@ -1,5 +1,5 @@
 Spring AI
-----------
+==========
 
 What is Spring AI?
 - framework for integrating AI into Spring applications
@@ -25,7 +25,7 @@ Core Features
 	
 Spring Ecosystem Integrations
 -----------------------------
-- Spirng Boot:
+- Spring Boot:
 	- auto-configuration and starters for quick setup with AI models and vector DBs
 
 - Familiar Model:
@@ -48,6 +48,7 @@ Typical Use Cases
 - Data processing
 	- Add AI to pipelines for content moderation, transcription or text generation
 	
+===============================	
 Spring AI architecture	
 ===============================	
 ChatClient 
@@ -64,10 +65,10 @@ ChatModel
 OpenAIChatModel		
 AnthropicChatModel		
 OllamaChatModel
-===============================	
 
+===============================	
 Using Prompt Templates
----------------------
+=======================
 Why use prompt templates?
 
 - Simplifies prompt construction
@@ -91,17 +92,18 @@ chatClient.prompt().user(promptUserSpec -> promptUserSpec.text(userpromptTemplat
 					.param("customerMessage",customerMessage)
 					.call().content();
 					
+================
 Prompt Stuffing 
----------------
+================
 Prompt Stuffing = giving the LLM an open book before answering a question
 
 - You include contextual data or reference text along with the user's question
-- The LLM uses this context to answer the question accurately - even if it was not pre-trained on teh topic
+- The LLM uses this context to answer the question accurately - even if it was not pre-trained on the topic
 - This technique is also know as in-context learning or retrieval-augmented propmting (when donr programmatically) 
 - e.g: internal company policy lookup 
 
 Prompt (Stuffed):
-	"According to teh company's HR policy, employees are eligible for 18 days of paid leave annually, Unused leave can 
+	"According to the company's HR policy, employees are eligible for 18 days of paid leave annually, Unused leave can 
 	be carried over to the next year"
 
 Question:
@@ -110,4 +112,359 @@ Question:
 LLM Answer
 	Employees are eligible for 18 days of paid leave anually
 
+
+=========
+Advisors
+=========
+Advisors are like interceptors or middleware for your prompt flow
+
+They allow you to:
+- Pre-process or post-process prompt data
+- Add customm logging or auditing
+- Inject additional behavior without modifying core logic
+- Chain multiple behaviors cleanly
+
+Where Advisors fit?
+User -> ChatClient -> [Advisors] -> LLM -> Response -> [Advisors] -> User
+
+Best practices
+---------------
+- Keep advisors stateless or request-scoped
+- Chain multiple advisors if needed
+- Avoid altering the meaning of prompts unless intentional
+- Use advisors for cross-cutting concerns, not core logic
+
+Configuring Advisors
+--------------------
+Spring AI provides some built-in advisors, and you can create your own.
+Built-in examples: SimpleLoggerAdvisor, SafeGuardAdvisor, PromptChatMemoryAdvisor, etc
+
+How can they be configured?
+----------------------------
+chatClientBuilder
+.defaultAdvisors(new SimpleLoggerAdvisor())
+.build()
 	
+chatClientBuilder
+.prompt()
+.advisors(new SimpleLoggerAdvisor())
+.user(message)
+.call().content();	
+	
+We can implement our own by implementing the 'CallAdvisor', 'StreamAdvisor' interfaces	
+
+
+===========
+ChatOptions
+===========
+What are ChatOptions?
+
+ChatOptions is a configuration in Spring AI that allows you to customize how a language model behaves during chat/ completion calls.
+Think of it like a "tuning panel" for your AI model - you can set limits, adjust creativity, 
+randomness, verbosity, control response length, and more
+
+
+Key ChatOptions
+---------------
+model - which LLM model to use (e.g: gpt-4,gpt-3.5-turbo, etc)
+frequencyPenalty - Reduce repetition, higher = less repetition
+presencePenalty - encourages mentioning new topics
+temperature - contrls creativity 0 = focussed , 1 = random
+topP - Controls randomness (nucleus sampling)
+stopSequences - Stop generating when specific phrases are found
+maxTokens - maximum number of tokens (words/chars) in reply
+topK - considers how many top choices are considered
+
+ChatResponse types
+====================
+stream().content()
+	Streams the output doesn't wait for the full response to be available
+	
+call().content()
+	Displays output after the entire response is available
+	
+	
+==========================
+Structure Output converter
+==========================
+Why do we need structured output converter?
+LLMs typically return plain text responses, but in real-world we often need structure data like
+	- JSON
+	- XML
+	- POJOs
+Structured data is easier to parse, use and integrate in applications
+
+What is Structured Output Converter?
+-------------------------------------
+A helper that does 2 things:
+	- Before sending prompt to LLM	
+		- Adds formatting instructions to guide the model
+		- Ensures it replies in a parseable formatting
+
+	- After getting response from LLM
+		- Converts raw text into a Java object, like Map, List, or custom class
+		
+		
+======
+Gen AI
+======
+GenAI Family Tree
+- Artificial Intelligence (AI)
+- Machine Learning (ML)		
+- Deep Learning (DL)
+- Neural Networks (NN)		
+- NLP (natural Language Processing)		
+- GenAI (Generative AI)		
+- LLM (Large Language Model)
+
+
+================================
+What is Artificial Intelligence
+================================
+- AI means making computers behave liek humans - thinking, learning, solving problems, or maing descisions
+- It's like giving a brain that can learn, reason, and make decisions 
+- AI is an umbrella terms for smart computer systems
+
+=========================
+What is Machine Learning?
+=========================
+- ML is a smaller part of AI
+- It's like teaching a computer to learn from examples, not by giving it strict rules
+- Machine Leanring : we show computers lots of examples so they can learn patterms, instead of prgramming specific rules, we 
+  let the computer figure out the patterns on its own
+  
+Real-world examples
+-------------------
+- Emal spam detection
+- Online shopping recommendations
+- Voice recognition
+
+ML is how computers learn from experience, just like how humans do 
+
+=============
+Deep Learning
+=============
+DL is a more advanced form of machine learning that mimics how the human brain works using structures called neural networks
+- Inspired by how our brain works with interconnectedneurons
+- Uses artificial neural networks with many layers (that's why its called deep)
+- Each layer learns different features - like edges, shapes then complete objects
+
+Real-world examples
+-------------------
+- Image recognition
+- Language transaltion
+- Self-driving cars
+
+Just like the human brain understands not just the words but the meaning behind them, 
+deep learning models learn how language works, context, emotions, structure - all automatically
+
+=====================
+Neural Networks (NN)
+=====================
+- Neural Networks are the buidling blocks of deep learning
+
+- Computer systems designed to wor like brain cells (neurons)
+- Each 'artificial neiron' receives information, processes it, and passes it on
+- Connected in networks where each connection has different strengths
+
+Why they matter?
+- They're the foundation that makes Deep Learning possible
+- They can find patterns human might miss
+- They get better with more data and practice
+
+
+=================================
+Natural Language Processing (NLP)
+=================================
+NLP is a branch of AI that helps machines understand and work with human language - reading, writing, and talking
+- The technology that helps computers understand and work with human language
+- Bridges the gap between how humans communicate nad how computers process information
+- Makes it possible for us to talk to computers naturally
+
+Key capabilities
+-----------------
+- Understanding: What does this sentence mean?
+- Generation: How do I express this idea in words
+- Translation: How do I say this in another language
+- Sentiment: Is this comment positive or negative?
+
+Real-world examples
+-------------------
+- Voice assistants
+- Email auto-complete suggestions
+- Language transaltion apps
+- Chatbots on websites
+
+=====
+GenAI
+=====
+What is GenAI (Generation AI)?
+- GenAI is like a big box that can create brand new things.
+- It's like a super creative artist. This box can draw new pictures, write new songs or even make up new stories
+
+GenAI (Big category of creative AI)
+	- LLM (ChatGPT, Claude)
+	- Image generators (DALL.E, Midjourney)
+	- Music generators 
+	- Video generators (Sora, Runway)
+	- Code generators (Github Copilot)
+	
+	
+=====================	
+The concept of Tokens
+=====================	
+LLM predict the next token - not full words
+LLM can't understand direct text, everything needs to be converted to tokens (numbers)
+The process of breaking the original text into token is called tokenization
+
+Token
+-----
+The basic unit of a language model is token. A token can be a character or a word, or part of a word (like -tion), depending on the model
+It could be:
+- a full word -> dog
+- a word part -> ish, ing, play
+- a single character -> a, b, 1
+- non-English letter 
+- a special keyword -> <|end of text|>
+
+Token IS NOT a words
+They're pieces models use to build words
+
+Text -> Tokens -> Token IDs -> Vectors
+
+Vocabulary lookup
+-----------------
+In the context of LLMs, a models vocabulary is the complete list of token it cna recognize, 
+each token in this list has a unique ID, so the model can process language as numbers (tokenIDs), not jus text
+
+Embeddings
+----------
+An embedding is 
+	- A list of numbers (aka a vector)
+	- Each number tells us how a word relates to a concept
+
+A vector is just a list of numbers that represent something, it is a sequence of numbers
+		V=[v1, v2, v3, v4, v5]
+
+Each vi represents how much a number matches a concept
+
+A simple imaginary embedding for 'King' (Vector style)
+Dimensions: [Royalty | Female | Leadership | Strength | Fictional]
+Embedding Vector for "King": [9.5 | -8.0 | 7.5 | 6.0 | 2.0]
+Embedding Vector for "Queen": [9.5 | 8.0 | 7.0 | 5.5 | 2.0]
+
+How is 'closeness' measured?
+The dot product is used
+- multiply each number in a vector with the matchign numbrt in the other vector
+- add all the results
+- result tells us:
+	- positive -> meanings are related
+	- zero -> unrelated
+	- negative -> opposite meanings 
+
+Projections
+-----------
+- Each word may have ~10k dimensions, but we care only about certain dimensions
+- We need to squash the vector into a smaller one to keep only these values
+- This squashing is called Projection.
+- Projection = flattening (compressions) a huge space (12288 D) into a smaller one (100 D) that focuses on specific topics
+
+What happens when we ask an LLM a question?
+- The input is tokenized and converted into high-dimensional vectors
+- These embeddings pass through multiple layers of the neural netwerok (attention layers, linear projections, etc)
+- At every layer, the model learns which parts of vector space matter for the task - it performs dynamic, contextual projections
+- By the end, the model profuces an output based on those 'filtered' or 'focussed' representations
+
+Static Embeddings
+------------------
+- Each token ID gets converted into a vetor of fixed size, like a mathematical, meaning of the token. 
+- These vectors are called ststic embeddings because:
+	- They are pre-trained
+	- They are fixed (the vector for 'King' is always same)
+	- They do not depend on surrounding data
+- These embeddings are strored in a lookup table. Each token ID indexes its corresponding vector	
+	
+Chat Memory 
+------------
+LLMs are stateless, Spring AI adds memeoty
+- LLMs don't remember past chats, Each interaction is like a fresh start - no memory
+- This can be a problme if you want to maintain conversation context across multiple interactions
+- Spring AI give us ChatMemory abstraction to store and manage conversation history
+- Messages are saved usign a ChatMemoryRepository - think of it as the storage engine behind the scenes
+
+Flexible Memory Strategies
+----------------------------
+We can choose what to remember 
+	- Keep only last N messages
+	- Store messages for a specific time window
+	- Retain messages until a token limit is reached
+	
+ChatMemory:
+	- Defines what to store (e.g: last N messages)
+	- Sample impl class MessageWindowChatMemory
+
+ChatMemoryRepository	
+	- Defines contract for storing an dretrieving chat messages
+	- Using InMemoryChatMemoryRepository we can store the chat memory inside In-Memory (default)
+	- Using JdbcChatMemoryRepository we can store teh chat memory in a DB like H2, MySQL, PostGres
+	
+Making ChatClient 'remember' with Advisors
+------------------------------------------
+- WHen using Spring's AI ChatClient, you can add memeoty to your LLM conversation with the help of Advisors.
+- These advisors manage how memory is stored and reused across multiple interactions
+
+Built-in Advisors in Spring AI
+------------------------------
+MessageChatMemoryAdvisor
+	- Stores chat as list of structured messages
+	- Injects past messages directly into the prompt
+	- Best when you want the LLM to 'see' the full chat history like a real chat logging
+
+PromptChatMemoryAdvisor
+	- Converts memory into plain text format
+	- Appends it to the system prompt (like a summary)
+	- Good for simple LLMs or when when token budget is limited
+
+VectorStoreChatMemoryAdvisor
+	- Stores memory in a vector database (e.g: Qdrant, Pinecone)
+	- Retrieves the most relevant past messages using embeddings
+	- Ideal for long or knowledge-based conversations (semantic memory)
+	
+ChatMemory using SpringAI
+--------------------------
+SpringAI auto-configures a ChatMemory bean that you can use directly in your application.
+By default, it uses an in-memory repository to store messages (InMemoryChatMemoryRepository) and 
+a MessageWindowChatMemory implementation to manage the conversation history.
+The same can eb injected into the ChatClient as shown 
+
+  
+    public ChatClient chatClient(ChatClient.Builder chatClientBuilder, ChatMemory chatMemory) {
+        return chatClientBuilder
+                .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory)).build();
+    }
+	
+	@GetMapping("/chat-memory")
+    public ResponseEntity<String> chatMemory(@RequestHeader("username") String username, @RequestParam("message") String message) {
+        return new ResponseEntity<>(chatClient
+                .prompt()
+                .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, username))
+                .user(message)
+                .call().content(), HttpStatus.OK);
+    }
+
+
+JdbcChatMemoryRepository is a built-in implementation taht uses JDBC to store messages in a relational database.
+It supports multiple databases out-of-the-box and is suitable for applications that require persistent storage of chat memory
+
+SpringAI also supports storing chat memory using (Neo4jChatMemoryRepository) and Cassandra (CassandraChatMemoryRepository)
+
+Consider Context window when using Chat Memory
+----------------------------------------------
+The context window is like the memory span of a LLM. It tells the mdoel how much text (tokens) it can "see" at one time while
+generating response
+
+How to be careful with conext window when using Chat Memory
+- Explore the model's limit and chose a model based on how long your conversations are expected to be 
+- FOr large chat histories, prefer VectorStoreChatMemoryAdvisor to select only relevant past messages instead of the entire history
+- Limit the number of store messages, SpringAI by default keeps 20 messages
+- Log or monitor token usage
