@@ -468,3 +468,56 @@ How to be careful with conext window when using Chat Memory
 - FOr large chat histories, prefer VectorStoreChatMemoryAdvisor to select only relevant past messages instead of the entire history
 - Limit the number of store messages, SpringAI by default keeps 20 messages
 - Log or monitor token usage
+
+
+RAG - (Retrieval Augmented Generation)
+---------------------------------------
+A smart way to give language nodels access to external knowledge so they can give better, more accurate answers
+
+Retrieval: searches company docs, PDF's or vector database
+Augmentor: Picks up most relevant chunk of text
+Generator (LLM): Writes an answer using that retrieved knowledge, More accurate, up to date, and personalized response
+
+Limitations of relying on LLM alone
+------------------------------------
+- With jus LLM, you give a prompt -> The LLM generates a response based on its pre-trained knowledge
+- But here's the problem:
+	- LLM doesn't know everything, it can't fetch real-time or private company data
+	- It offers little or no personalization
+	
+RAG: Giving LLms superpowers with external knowledge
+With RAG implemenetd
+- You give a prompt	
+- RAG has knowledge base for retrieval documents or information
+- These fetched data/ documents are added as context to the LLM
+- Then the LLM generates a more accurate and grounded answer
+
+- LLM now has access to the right info - even private, dynamic or domain specific
+- Allows light personalization based on user or context
+
+The challenge with prompt stuffing 
+When answering questions using LLms,w eoften try to include helpful context directly in the prompt.
+This is called prompt stuffing - additing all relevant information to help the model answer accurately
+
+It works well when the documents are small. But as the number or size of documents increases:
+	- The prompt size vecomes too alrge which leads to more token comsumption
+	- Only a tiny portion of the context may be relevant to the question
+	
+RAG solves the inefficiency of prompt stuffing. It breaks large documents into smaller chunks.
+During each query:
+	- Only the most relevant chunks (retrieved using similarity search) are added to the prompt
+	- This keeps the prompt compact and focussed
+	- Improves accuracy and reduces token waste
+	
+What is vector store?
+- A vector store is a speicla type of database designed to store and search data in the form of vectors (high-dimnesional numerical representations)
+- These vectors represent semantic meanign of text, images, or audio oftern generated using AI model (like embeddings from OpenAI)	
+
+Why use vectors?
+- Traditional keyword search is limited (e.g: nly find exact or similar words)
+- Vector seacrh understands context and meaning, enabling semantic search
+- Example: Searching "How ro fix a laptop screen" will retrieve content related to "repairinf a broken display" even if exact words don't match
+
+Popular Vector Store Tools
+----------------------------
+- Azure AI Search, Cassandra, ElasticSearch, MongoDB, Neo4j, Pinecone, postGreSQL with pgvector extension, Qdrant, Redis with RediSearch module
