@@ -65,8 +65,97 @@ ChatModel
 OpenAIChatModel		
 AnthropicChatModel		
 OllamaChatModel
+===============================
+	
+Working with multi-model in Spring AI
+-------------------------------------
+Why use multi-models?
+- Task based model selection
+	- Use  apowerfule model for complex reasoning an d lightweight model fir basic queries
 
-===============================	
+- Fallback strategy
+	- Automatically swithc  to another model if the primary one is uncreacheable
+
+- A/B testing
+	- Test different model or configurations to compare accuracy, latency, and cost
+
+- User Preference
+	- Allow users to chose their preferred model for interaction
+
+- Specialized models
+	- combine models with different strengths (e.g one for coding, another for creative writing)
+
+
+Spring AI
+----------
+- Message roles
+- Advisors
+- Prompt Templates
+- Chat History Management
+- RAG (Retrieval-Augmented Generation)
+- Function Calling (Tools Integration)
+- Building MCP cients and servers
+
+
+Message roles
+--------------
+- When interacting with an LLM, we send prompts made up of messages, each message has a role thaa helps the LLM understand the context and how to respond
+
+Common Roles (Used by most APIs)
+-------------------------------
+1.User (UserMessage)
+	What the users asks or says: e.g: Tell me a joke
+
+2.System (SystemMessage)
+	Instruction for how the LLM shoukd behace, e.g: be formal
+
+3.Assistant	(AssistantMessage)
+	The LLM's response, e.g: Sure, why did yhe chicken
+
+4.Function (ToolResponseMessage)
+	Special instructions to run a function or fetch data
+	
+Not all LLM model providers support all roles
+
+OpenAI: User, System, Assistant, Function
+Anthropic: User, System, Assistant
+Mistral AI: User, System, Assistant
+Google Gemini: No System/ Function roles. Only User, Model (like Assistant)
+
+If the system role is not supported (like in Gemini), Spring AI combines the system message into the User message behind the scenes
+
+Defaults
+--------
+defaults refer to pre-configured values or behaviors that are applied automatically to each request made through the ChatClient - unless overridden
+
+These defaults are useful when:
+	- you want to avoid repeating the same system message or advisor every time
+	- you have consistent role or tone for your assistants
+	- you want consistent logging or tool behavior across calls
+	
+Common defaults you can setup
+-----------------------------
+defaultSystem(..)
+	defines a default system messgae - which sets the behavior or role of the AI assistants
+	chatClientBuilder.defaultSystem("""You are a helpful assistant that answers HR-related queries""")	
+
+defaultAdvisors(..)
+	registers advisors like logging or custom filters that apply to each interaction
+	chatClientBuilder.defaultAdvisors(new SimpleLoggerAdvisor())	
+	
+defaultTools(..)
+	registers tools/ functions available to the LLM by default
+ 	chatClientBuilder.defaultTools(List.of(myToolClassInstance))
+	
+defaultOptions(..)
+	allows you to set configuration options for the model request (e.g: temperature, maxToken, etc)
+ 	chatClientBuilder.defaultOptions(ChatOptions.builder().temperature(0.3).maxTokens(300).build())
+	
+defaultUser(..)
+	sets a default user message that will be included in every prompt unless overridden
+	chatClientBuilder.defaultUser("How can you help me")
+		
+=======================	
 Using Prompt Templates
 =======================
 Why use prompt templates?
