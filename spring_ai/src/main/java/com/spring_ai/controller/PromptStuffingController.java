@@ -18,7 +18,7 @@ public class PromptStuffingController {
         this.chatClient = chatClient;
     }
 
-    @Value("classpath:/promptTemplates/systemPromptTemplate.st")
+    @Value("classpath:/promptTemplates/systemPromptTemplate_old.st")
     Resource systemPromptTemplate;
 
     @GetMapping("/prompt-stuffing")

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Component
+//@Component
 public class RandomDataLoader {
     private final VectorStore vectorStore;
 
@@ -17,7 +17,7 @@ public class RandomDataLoader {
     }
 
 
-    @PostConstruct
+//    @PostConstruct
     public void loadSentencesIntoVectorStore() {
         List<String> sentences = List.of(
                 "Java is used for building scalable enterprise applications.",
