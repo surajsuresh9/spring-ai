@@ -34,11 +34,11 @@ public class ChatMemoryChatClientConfig {
     @Bean("chatMemoryChatClient")
     public ChatClient chatClient(ChatClient.Builder chatClientBuilder, ChatMemory chatMemory, RetrievalAugmentationAdvisor retrievalAugmentationAdvisor) {
 
-        Advisor loggerAdvisor = new SimpleLoggerAdvisor();
+//        Advisor loggerAdvisor = new SimpleLoggerAdvisor();
         MessageChatMemoryAdvisor messageChatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
-        TokenUsageAuditAdvisor tokenUsageAuditAdvisor = new TokenUsageAuditAdvisor();
+//        TokenUsageAuditAdvisor tokenUsageAuditAdvisor = new TokenUsageAuditAdvisor();
         return chatClientBuilder
-                .defaultAdvisors(List.of(retrievalAugmentationAdvisor, tokenUsageAuditAdvisor, loggerAdvisor, messageChatMemoryAdvisor))
+                .defaultAdvisors(List.of(retrievalAugmentationAdvisor, messageChatMemoryAdvisor))
                 .build();
     }
 

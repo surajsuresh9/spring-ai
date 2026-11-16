@@ -24,15 +24,15 @@ public class WebSearchRAGChatClientConfig {
     @Bean("webSearchRAGChatClient")
     public ChatClient chatMemory(ChatClient.Builder chatClientBuilder, ChatMemory chatMemory, RestClient.Builder restClient) {
         // Advisors
-        Advisor simpleLoggerAdvisor = new SimpleLoggerAdvisor();
-        Advisor tokenUsageAuditAdvisor = new TokenUsageAuditAdvisor();
+//        Advisor simpleLoggerAdvisor = new SimpleLoggerAdvisor();
+//        Advisor tokenUsageAuditAdvisor = new TokenUsageAuditAdvisor();
         Advisor messageChatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
         Advisor retrievalAugmentationAdvisor = RetrievalAugmentationAdvisor.builder().documentRetriever(WebSearchDocumentRetriever
                         .builder()
                         .restClientBuilder(restClient).maxResults(5).build())
                 .build();
         return chatClientBuilder
-                .defaultAdvisors(List.of(simpleLoggerAdvisor, tokenUsageAuditAdvisor, messageChatMemoryAdvisor, retrievalAugmentationAdvisor))
+                .defaultAdvisors(List.of(messageChatMemoryAdvisor, retrievalAugmentationAdvisor))
                 .build();
     }
 }

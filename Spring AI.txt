@@ -99,7 +99,7 @@ Spring AI
 
 Message roles
 --------------
-- When interacting with an LLM, we send prompts made up of messages, each message has a role thaa helps the LLM understand the context and how to respond
+- When interacting with an LLM, we send prompts made up of messages, each message has a role that helps the LLM understand the context and how to respond
 
 Common Roles (Used by most APIs)
 -------------------------------
@@ -610,3 +610,180 @@ Why use vectors?
 Popular Vector Store Tools
 ----------------------------
 - Azure AI Search, Cassandra, ElasticSearch, MongoDB, Neo4j, Pinecone, postGreSQL with pgvector extension, Qdrant, Redis with RediSearch module
+
+
+Tools Calling
+-------------
+What is Tool Calling
+---------------------
+- LLM model can perform actions on the user's behalf based on requirements using tools calling
+
+Information Retrieval: fetches real time data from external systems
+Taking Action : performs actions in your app
+
+
+Return Direct - Skip The Model Response
+---------------------------------------
+By default, Tool result is sent back to the LLM so it can reason and continue chatting
+But sometimes, you want to:
+	- Return the tool's result directly to the user
+	- Skip extra processing by the model
+
+The 'returnDirect' falg of @Tools annotation tells Spring AI not to send the tools output back to the AI model for further processing.
+Instead, it immediately returns the tool's result directly as the final response to the user (or the caller)	
+
+
+    @Tool(name = "create ticket", description = "Create the Support ticket", returnDirect=true)
+    public String createTicket(@ToolParam(description = "Details to create a Support ticket") TicketRequest request, ToolContext toolContext) {
+        String username = (String) toolContext.getContext().get("username");
+        HelpDeskTicket ticket = helpDeskTicketService.createTicket(request, username);
+        return "Ticket #" + ticket.getId() + " successfully created";
+    }
+	
+	
+When to use returnDirect=true
+- The took generates a final, human, readbale message
+- You don;t want teh model to alter, sumarize, or continue the reasoning after the tool execution
+- You want to reduce latency by skipping the post-processing step
+
+Global Chat Client Configurations
+---------------------------------
+Whatever is configured using ChatClientBuilderCustomizer will be injected for all chatClient beans that will be created
+ChatClientBuilder behind the scenes will use the global configuration that have been configured
+
+Conditional Configuration
+-------------------------
+Toggle behavior per environment without code changes - e.g: enabletoken auditing selectively
+
+    @Bean
+    @ConditionalOnProperty(name = "audit.token-usage.enabled", havingValue = "true")
+    public ChatClientBuilderCustomizer auditAdvisor() {
+        return builder -> builder.defaultAdvisors(new TokenUsageAuditAdvisor());
+    }
+	
+audit.token-usage.enabled=true	
+
+Drive features from env vars or a config server - ideal for dev vs prod or gradual rollouts
+
+Final Takeaway
+---------------
+ChatClientBuilderCustomizer is a pattern for assembling ChatCLient behavior ina  structured, maintainable way
+
+- Many small, sinle-purpose customizers > one overloaded @Bean
+- Auto-configuration wires them into every ChatClient.Builder for you
+- Conditional beans make behavior configurable, not hard-coded
+- Scales cleanly as your assistant gains tools, memory, and advisors
+	
+Handling Errors Gracefully - ToolsExecutionException
+-----------------------------------------------------
+If your tool throws an error, Sprign wraps it in a ToolsExecutionException
+By default, Message is sent back to the LLM. Instead we can throw the exception to client app
+
+    @Bean
+    public ToolExecutionExceptionProcessor toolExecutionExceptionProcessor() {
+        return new DefaultToolExecutionExceptionProcessor(true);
+    }
+	
+If you're using Spring AI Boot Starters, DefaultToolExecutionProcessor is the default handler for tool execution errors
+By default, it sends the error message back to the model
+You can set the alwaysThrows falg in its constructor to true to throw exceptions instead of returning error messages
+
+LLM
+----
+- Just answers from memory (training data)
+- No real-time updates
+
+LLM + RAG
+---------
+- Pulls data from external sources (e.g: private docs)
+- Still only talks, doesn't take action
+- Smarter and more up-to-date advice
+
+LLM + Tools
+-----------
+- Can call APIs/ tools: flights, hotels, maps
+- Starts doing things for you, not just recommending
+
+AI Agent
+--------
+- Break down complex tasks into steps
+- Make decisions based in context
+- Executes multi-steps plans
+
+Agentic AI
+----------
+- Learns from experiences and improves over time
+- Collaborates with other AI agents
+- Anticipates your needs
+- Handles complex, ambiguous requests
+
+Model Context Protocol (MCP)
+----------------------------
+MCP is an open protocol that standardizes how apps provide context to LLMs. Think of it like a USB-C port for AI apps.
+MCP provides a standard way to connect AI models to differetn data sources and toolds
+
+How MCP works?
+--------------
+MCP follows a client-server architecture, in other words, MCP clients send requests to MCP servers, which respond with access to tools, resources amd prompts
+
+Why do we need MCP when we already have HTTP?
+---------------------------------------------
+- HTTP is a general web protocol for any client-server communication - web pages, APIs, file ransfers,etcIts stateless and doesn't understand AI concepts
+- MCP is AI-specidc and built on top of [protocols like HTTP
+- Think of MCP as a specialized layer that makes HTTP more suiatbel for AI use cases.
+- Similar to how GraphQL adds a query layer on top of HTTP.
+- You could build AI integrations with raw HTTP, but MCP an provides the AI-specific standards and abstractions that make it much more efficient and reliable
+
+
+
+MCP Architecture overview
+-------------------------
+Model Context Protocol (MCP) use a host-client-server architecture to streamline how AI models interact with tools adn contextual data
+
+MCP Host
+	- The central coordinator - typically a chatbot IDE, or AI app - taht manages permissions, tool access, nad session contex. It decides when to invoke a tool, either based on user input or automatically
+	
+MCP Client
+	- Launched by the host, it handles all communication between the host and a specific MCP sever. It's responsible for sending tool requests and receiving responses
+
+MCP Server
+	- Connects to a local or remote system (e.g: a database, file storage or third party API) and exposes specific capabilities like 'search file' or 
+	'create task'. Devs can either use public MCP servers or build theor own
+	
+Let's say we have a Speing AI app that uses OpenAI's LLM and interacts with Github through MCP-exposed tools
+
+MCP-Host 
+	- The Spring AI app is the host. It manages the conversation, decides when to call a Github tool (e.g: create issue)
+	
+MCP-Client
+	- The Spring AI app also initializes the MCP client to handle tool invocation requests and send them to Github MCP server. It handles communication between Spring AI app and Github server
+	
+MCP-Server
+	- Github, in this case, acts as the server. It exposes Github capabilities (create user, search query, get PR) as callable tools via MCP
+	
+Built-in Transport types in MCP
+-------------------------------
+MCP allows communication between clients and servers using built-in transport types. There are 2 main ones:
+
+Standard Input/ Output (stdio)
+-------------------------------
+This is like talking directly through a walkie-talkie. Data goes in one side and comes out the other - no internet, no browser, just local communication, best for:
+	- Command-line tools (liek terminal-based apps)
+	- Local setups (when your apps runs on your local machine)
+	- Simple tools or scripts
+	- Quick and easy communication between processes
+	
+
+Streamable HTTP
+---------------
+This is the internet friendly way. It uses HTTP POST to send data and optionally uses Server-Side Events (SSE) to stream responses from server to client, best for:
+	- We apps or browser based tools
+	- Scenarios needing two-way, ongoing communication
+	- Multiple users connected at the same time
+	- Keeping conversations alive across multiple requests
+	
+
+MCP Inspector
+-------------
+Used to inspect the various servers like the tools, resources etc
+	
