@@ -612,6 +612,160 @@ Popular Vector Store Tools
 - Azure AI Search, Cassandra, ElasticSearch, MongoDB, Neo4j, Pinecone, postGreSQL with pgvector extension, Qdrant, Redis with RediSearch module
 
 
+RAG - Document Search
+---------------------
+When trying to seacrh in a document, the entire document is provided in the context, every time
+This causes excessive token usage, inorder to overcome this, we can chunk the document (split it into smaller
+manageable chunks)
+
+
+	// split the text every 100 tokens, the doc can't have more than 400 tokens
+        TokenTextSplitter textSplitter = TokenTextSplitter.builder().withChunkSize(100).withMaxNumChunks(400).build();
+        vectorStore.add(textSplitter.split(docs));
+
+	// o.s.a.transformer.splitter.TextSplitter  : Splitting up document into 12 chunks.
+
+
+RetrievalAugmentationAdvisor
+----------------------------
+- We can minimise boiler plate code and use RetrievalAugmentationAdvisor
+
+	@Bean
+    public RetrievalAugmentationAdvisor retrievalAugmentationAdvisor(VectorStore vectorStore) {
+        return RetrievalAugmentationAdvisor.builder().documentRetriever(
+                VectorStoreDocumentRetriever
+                        .builder()
+                        .vectorStore(vectorStore)
+                        .topK(3)
+                        .similarityThreshold(0.5)
+                        .build()
+        ).build();
+    }
+
+	public ResponseEntity<String> documentChat(@RequestHeader("username") String username, @RequestParam("message") String message) {
+	        String answer = chatClient
+                .prompt()
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, username))
+                .user(message)
+                .call().content();
+        return new ResponseEntity<>(answer, HttpStatus.OK);
+	}
+
+
+RAG with Web Search
+-------------------
+Enhanced RAG system with live web search integration via Tavily API, mapping results into Spring AI documents tp provide accurate, up-tp-date knowledge in AI response
+
+Naive RAG & Advanced RAG
+------------------------
+Naive RAG:
+	A simple Retrieval-Augmented Generation approach where retrieved documants are directly passed to the LLM without optimization, which may lead to irrelevant or redundant context
+
+Retriever ---> Augmentattion ---> Generation
+
+Advanced RAG (Pre-Retrieval & post-Retrieval)
+	An enhanced RAG pipeline that applies techniques liek query reqwriting, filtering, reranking, and summarization before and after retrieval to deliver more accuarte, relevant, and concise results
+
+Pre-Retrieval ---> Retriever ---> Post-Retrieval ---> Augmentattion ---> Generation
+
+Pre-Retrieval
+-------------
+- This step transforms the input query into a more efficient form for retrieval
+- It handles poorly structured queries, resolves ambiguous terms, and simplifies complex vocabulary
+- It can alos adapt queries across unsupported languages for better search results
+
+Post-Retrieval
+--------------
+- This step refines the retrieval documents vefore augmentation
+- It tackles issues like 'lost-in-the-middle', context length limits nad redundant data
+- Examples include ranking relevance, compressing content, or masking sensitive information (e,g: emails, phone numbers)
+
+Semantic Caching
+----------------
+- Every LLm call costs you twice - and you keep paying for the same answer. Tokens cost money. Models take time, and in most real apps, perople ask the same handful of questions, just worded differently
+
+You pay in money
+----------------
+- Every request burn stokens - even when its a question you answered five minutes ago
+
+You pay in time
+---------------
+- A model can take seconds to reply, multiple that that across every duplicated request and users feel it
+
+To a human, this is one question, to the app, its four separate LLM calls
+- 4 payments, 4 waits, only one asnwer you already had
+
+
+Semantic caching
+----------------
+- A regular cache comapre letters, a semantic cache compares meaning
+- regular cache misses actual text
+- semantice cache matches meaning
+
+The only new ingredient versus a normal cache is 'similar enough' instead of identical
+- Embed the question
+	Turn text into a vector - a list of numbers that captures its meaning
+
+- Search the similar
+	Look in a vector store based cache for a past question whose meaning sists close to this one
+
+- Close enough? Hit
+	If it clears your similaroty threshold, retunr the stored answer. No LLM call
+
+- Otherwise miss
+	Call the LLM, then store this new question + answer for next time
+
+Points to remember
+------------------
+Set the threshold too lose
+Don't cache fresh or personal answers
+Watch the staleness
+	change a policy and old cached answers are now wrong. Add an expiry (TTL) or a way to invalidate entries
+
+
+Regular vs Semantic cache
+--------------------------
+- Matches on
+----------
+regular:
+	exact text
+semantic:
+	meaning/ intent
+
+- Hit condition
+----------------
+regular:
+	keys are identical
+semantic:
+	meanings are similar
+
+- Storage
+---------
+regular:
+	k-v store
+semantic:
+	vector store (embeddings)
+
+- "refund policy" vs "get my money back"
+regular:
+	2 misses
+semantic
+	1 hit
+
+- Best for
+-----------
+regular: Deterministic keys	- IDs, URLs
+semantic: natural language questions
+
+
+Use cases
+---------
+FAQs and support docs
+Documentation assistants
+RAG systems
+Customer-facing chat
+
+
 Tools Calling
 -------------
 What is Tool Calling
@@ -630,7 +784,7 @@ But sometimes, you want to:
 	- Skip extra processing by the model
 
 The 'returnDirect' falg of @Tools annotation tells Spring AI not to send the tools output back to the AI model for further processing.
-Instead, it immediately returns the tool's result directly as the final response to the user (or the caller)	
+Instead, it immediately returns the tool's result directly as the final response to the user (or the caller)
 
 
     @Tool(name = "create ticket", description = "Create the Support ticket", returnDirect=true)
@@ -639,8 +793,8 @@ Instead, it immediately returns the tool's result directly as the final response
         HelpDeskTicket ticket = helpDeskTicketService.createTicket(request, username);
         return "Ticket #" + ticket.getId() + " successfully created";
     }
-	
-	
+
+
 When to use returnDirect=true
 - The took generates a final, human, readbale message
 - You don;t want teh model to alter, sumarize, or continue the reasoning after the tool execution
@@ -660,8 +814,8 @@ Toggle behavior per environment without code changes - e.g: enabletoken auditing
     public ChatClientBuilderCustomizer auditAdvisor() {
         return builder -> builder.defaultAdvisors(new TokenUsageAuditAdvisor());
     }
-	
-audit.token-usage.enabled=true	
+
+audit.token-usage.enabled=true
 
 Drive features from env vars or a config server - ideal for dev vs prod or gradual rollouts
 
@@ -673,7 +827,7 @@ ChatClientBuilderCustomizer is a pattern for assembling ChatCLient behavior ina 
 - Auto-configuration wires them into every ChatClient.Builder for you
 - Conditional beans make behavior configurable, not hard-coded
 - Scales cleanly as your assistant gains tools, memory, and advisors
-	
+
 Handling Errors Gracefully - ToolsExecutionException
 -----------------------------------------------------
 If your tool throws an error, Sprign wraps it in a ToolsExecutionException
@@ -683,7 +837,7 @@ By default, Message is sent back to the LLM. Instead we can throw the exception 
     public ToolExecutionExceptionProcessor toolExecutionExceptionProcessor() {
         return new DefaultToolExecutionExceptionProcessor(true);
     }
-	
+
 If you're using Spring AI Boot Starters, DefaultToolExecutionProcessor is the default handler for tool execution errors
 By default, it sends the error message back to the model
 You can set the alwaysThrows falg in its constructor to true to throw exceptions instead of returning error messages
@@ -742,25 +896,25 @@ Model Context Protocol (MCP) use a host-client-server architecture to streamline
 
 MCP Host
 	- The central coordinator - typically a chatbot IDE, or AI app - taht manages permissions, tool access, nad session contex. It decides when to invoke a tool, either based on user input or automatically
-	
+
 MCP Client
 	- Launched by the host, it handles all communication between the host and a specific MCP sever. It's responsible for sending tool requests and receiving responses
 
 MCP Server
-	- Connects to a local or remote system (e.g: a database, file storage or third party API) and exposes specific capabilities like 'search file' or 
+	- Connects to a local or remote system (e.g: a database, file storage or third party API) and exposes specific capabilities like 'search file' or
 	'create task'. Devs can either use public MCP servers or build theor own
-	
+
 Let's say we have a Speing AI app that uses OpenAI's LLM and interacts with Github through MCP-exposed tools
 
-MCP-Host 
+MCP-Host
 	- The Spring AI app is the host. It manages the conversation, decides when to call a Github tool (e.g: create issue)
-	
+
 MCP-Client
 	- The Spring AI app also initializes the MCP client to handle tool invocation requests and send them to Github MCP server. It handles communication between Spring AI app and Github server
-	
+
 MCP-Server
 	- Github, in this case, acts as the server. It exposes Github capabilities (create user, search query, get PR) as callable tools via MCP
-	
+
 Built-in Transport types in MCP
 -------------------------------
 MCP allows communication between clients and servers using built-in transport types. There are 2 main ones:
@@ -772,7 +926,7 @@ This is like talking directly through a walkie-talkie. Data goes in one side and
 	- Local setups (when your apps runs on your local machine)
 	- Simple tools or scripts
 	- Quick and easy communication between processes
-	
+
 
 Streamable HTTP
 ---------------
@@ -781,9 +935,8 @@ This is the internet friendly way. It uses HTTP POST to send data and optionally
 	- Scenarios needing two-way, ongoing communication
 	- Multiple users connected at the same time
 	- Keeping conversations alive across multiple requests
-	
+
 
 MCP Inspector
 -------------
 Used to inspect the various servers like the tools, resources etc
-	
