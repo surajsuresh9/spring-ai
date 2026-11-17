@@ -939,4 +939,116 @@ This is the internet friendly way. It uses HTTP POST to send data and optionally
 
 MCP Inspector
 -------------
-Used to inspect the various servers like the tools, resources etc
+Used to inspect the various MCP servers capabilities like tools offered, resources etc
+> npx @modelcontextprotocol/inspector
+
+
+Filtering MCP Tools in Spring AI
+--------------------------------
+Each server handle the LLM a pile of tools
+More tools != better
+More tools = more confusion, higher cost, security risk
+
+We need to control which tools reach the LLM
+- More MCP servers, more tokens
+- By default all tools will be available for all requests, taking up token costs
+
+MCP Logging
+------------
+- Server-side logs exist - but they're trapped in the server's console
+- The client never sees them
+
+MCP has logging built into the protocol
+- Logging isn;t bolted on - it's part of the MCP spec
+- A server cab push log events to the client as it works
+- The client can fold them into its own logging output
+- Result: one unified stream across the n/w boundary 
+
+Many servers? One handler each
+------------------------------
+- Talking to several MCP severs?Give each its own handler method
+- Keeps shipping logs and payment logs cleanly separated
+- Or tag the message ([shipping],[payments]) so a unified stream stays readbale
+
+@McpLogging(clients="shippingmcp")
+public void onShippingLog(...){...}
+
+@McpLogging(clients="paymentsmcp")
+public void onPaymentsLog(...){...}
+
+As your agent grows from one server to five, you don't want everything in one undiffreentiated blob
+A handler per server keeps the picture clear
+
+
+MCP Tool Progress Notifications
+-------------------------------
+MCP Tool Progress Notifications will keep the client in the loop while a tool takes its sweet time
+
+- Most tools answer in 1-2 seconds, a few don't
+- Heavy lifting takes time: big DB scans, file crunching, calls to a sluggish third-party API, report aggregation
+- While the tool grinds away, the client sess.. nothing
+- No spinner, no heartbeeat, just a blinking cursor and a nervous user
+
+How Progress Flows
+- Server - emits progress updates as work advances
+- Progress token - a albel that ties each update back to this specific request
+- Client - listens for updates and shows them to the user
+
+CLIENT --> (request + progress token) --> SERVER 10%, 20%, ... 100% (tool working) --> final result
+
+
+MCP Sampling
+-------------
+Our MCP server has done 'dumb' work -save a ticket, fetch a ticket. Now we'll give it access to an LLM, without giving it an API keys
+
+Tools are smart at doing, dumb at talking
+
+Sampling = the server asks the client - "Hey, run this prompt on your LLM for me"
+	- The client already has an LLM 
+	- The server sends a prompt --> client runs it --> send text back
+	- Server stays simple, No keys, no model setup
+	
+"Sampling" is just the MCP word for "ask the client to do an LLM completion"	
+
+Normally: client -> asks -> server
+Sampling: server -> asks -> client
+
+- This is a callback in the middle of a tool call
+- The server pauses its tool, requets an LLM completion resumes
+- 
+The client must opt in to sampling
+- During connection , the client advertises that sampling is supported
+- The server checks before using it
+
+	if(!ctx.sampleEnabled()){
+		return tickets.toString(); // garceful fallback
+	}
+	
+MCP Elicitation
+---------------	
+Elicitation = the tool asks a question
+A server-side tool pauses, asks the client for structured info, and resumes with the answer	
+
+MCP Annotations
+---------------
+
+Server Annotations
+------------------
+For MCP Servers, the following annotations are provided:
+
+@McpTool - Implements MCP tools with automatic JSON schema generation
+@McpResource - Provides access to resources via URI templates
+@McpPrompt - Generates prompt messages
+@McpComplete - Provides auto-completion functionality
+
+Client Annotations
+-------------------
+For MCP Clients, the following annotations are provided:
+
+@McpLogging - Handles logging message notifications
+@McpSampling - Handles sampling requests
+@McpElicitation - Handles elicitation requests for gathering additional information
+@McpProgress - Handles progress notifications during long-running operations
+@McpToolListChanged - Handles tool list change notifications
+@McpResourceListChanged - Handles resource list change notifications
+@McpPromptListChanged - Handles prompt list change notifications
